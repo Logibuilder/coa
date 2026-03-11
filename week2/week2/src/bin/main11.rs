@@ -26,6 +26,4 @@ fn main() {
     node1.print();
     node2.print();
     node3.print();
-
-    
 }
