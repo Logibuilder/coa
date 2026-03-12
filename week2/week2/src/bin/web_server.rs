@@ -1,71 +1,28 @@
 use std::net::{TcpListener, TcpStream};
 use std::io::{BufRead, Write, Stdout, BufReader, stdout};
+use std::fs; 
+use std::path::Path;
 
 
-
-const Acceuil : &str = r#"<!DOCTYPE html>
-
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Mini serveur test</title>
-
-<link rel="stylesheet" href="style.css">
-
-<style>
-body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin-top: 60px;
+fn get_content_type(extention: &str) -> &str {
+    match extention {
+        "html" => "text/html",
+        "css" => "text/css",
+        "js" => "application/javascript",
+        "jpg" => "image/jpeg",
+        "png" => "image/png",
+        "svg" => "image/svg+xml",
+        "woff" => "font/woff",
+        "woff2" => "font/woff2", 
+        _ => "application/octet-stream", 
+    }
 }
+/**
+pour une requete GET, on doit retourner le content-type en fonction de l'extension du fichier demandé
+*/
+fn get_response_data(content_type : &str) {
 
-h1 {
-    margin-bottom: 40px;
-}
-
-.container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 15px;
-}
-
-button {
-    padding: 12px 20px;
-    font-size: 16px;
-    cursor: pointer;
-}
-</style>
-
-</head>
-<body>
-
-<h1>Test des ressources du mini serveur</h1>
-
-<div class="container">
-
-<a href="page.html"><button>HTML</button></a>
-
-<a href="style.css"><button>CSS</button></a>
-
-<a href="script.js"><button>JavaScript</button></a>
-
-<a href="image.jpg"><button>JPG</button></a>
-
-<a href="image.png"><button>PNG</button></a>
-
-<a href="image.svg"><button>SVG</button></a>
-
-<a href="font.woff"><button>WOFF</button></a>
-
-<a href="font.woff2"><button>WOFF2</button></a>
-
-</div>
-
-
-</body>
-</html>
-"#;
+} 
 
 fn handle_client(mut stream: TcpStream) -> std::io::Result<()> {
     let mut reader = BufReader::new(&stream);
@@ -76,14 +33,48 @@ fn handle_client(mut stream: TcpStream) -> std::io::Result<()> {
 
     if !first_line_request.is_empty() {
         println!("REçu : {}", first_line_request);
-        stdout().flush()?;
     }
-    let response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 12\r\n\r\nHello world";
 
-    stream.write_all(response.as_bytes())?;
+    let parts: Vec<&str> = first_line_request.split_whitespace().collect();
 
+    if parts.len() < 3 {
+
+        stream.write_all(b"HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nContent-Length: 11\r\n\r\nBad Request")?;
+    }
+
+    if parts[0] != "GET" {
+        stream.write_all(b"HTTP/1.1 405 Method Not Allowed\r\nContent-Type: text/plain\r\nContent-Length: 18\r\n\r\nMethod Not Allowed")?;
+    } 
+
+    let path_request =  &parts[1]; 
+
+    if *path_request == "/" {
+
+        let response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 11\r\n\r\nHello world";
+        stream.write_all(response.as_bytes())?;
+    } else {
+
+        let file_name = &path_request[1..];
+        let path = Path::new(file_name);
+        if path.exists() && path.is_file() {
+            let file_content = fs::read(file_name)?;
+
+
+            let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("");
+            let content_type = get_content_type(extension);
+
+            let header = format!("HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n", content_type, file_content.len());
+
+            stream.write_all(header.as_bytes())?;
+            stream.write_all(&file_content)?;
+        } else {
+            let body = "404 Not Found";
+            let response = format!("HTTP/1.1 {}\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", body, body.len(), body);
+            stream.write_all(response.as_bytes())?;
+        }
+
+    }
     stream.flush()?;
-
     Ok(())
 }
 
