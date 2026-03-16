@@ -3,7 +3,9 @@ use std::io::{BufRead, Write, Stdout, BufReader, stdout};
 use std::fs; 
 use std::path::Path;
 
-
+/**
+get_content_type : retourne le content-type en fonction de l'extension du fichier demandé
+*/
 fn get_content_type(extention: &str) -> &str {
     match extention {
         "html" => "text/html",
@@ -24,6 +26,9 @@ fn get_response_data(content_type : &str) {
 
 } 
 
+/**
+handle_client : gere une requete du client, et retourne une reponse en fonction de la requete
+*/
 fn handle_client(mut stream: TcpStream) -> std::io::Result<()> {
     let mut reader = BufReader::new(&stream);
 
@@ -65,6 +70,7 @@ fn handle_client(mut stream: TcpStream) -> std::io::Result<()> {
 
             let header = format!("HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n", content_type, file_content.len());
 
+            /// Envoie l'entête puis le contenu du fichier
             stream.write_all(header.as_bytes())?;
             stream.write_all(&file_content)?;
         } else {
