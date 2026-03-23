@@ -28,7 +28,7 @@ impl CaesarExt for &str {
 fn shift_char(c: char, shift: u8) -> char {
     if c.is_ascii() {
         let shifted = (c as u8 + shift) % 128;
-        shifted as char
+        shifted as char 
     } else {
         c
     }
