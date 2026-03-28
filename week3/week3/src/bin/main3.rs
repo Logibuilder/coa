@@ -24,10 +24,8 @@ enum Instruction {
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Instruction::Add(a, b) => write!(f, "{}, {}", a, b),
-            Instruction::Mul(a, b) => write!(f, "{}, {}", a, b),
-            Instruction::FAdd(a, b) => write!(f, "{}, {}", a, b),
-            Instruction::FMul(a, b) => write!(f, "{}, {}", a, b),
+            Instruction::Add(a, b) | Instruction::Mul(a, b) => write!(f, "{}, {}", a, b),
+            Instruction::FAdd(a, b) | Instruction::FMul(a, b) => write!(f, "{}, {}", a, b)
         }
     }
 }
